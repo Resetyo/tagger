@@ -1,0 +1,43 @@
+html, body {
+  height: 100%;
+}
+
+.btn-lemon {
+  background-color: #fff942;
+  border-color: #fff942;
+
+  &:hover {
+    background-color: darken(#fff942, 10);
+  }
+}
+
+.btn-lime {
+  background-color: #b5ff2b;
+  border-color: #b5ff2b;
+
+  &:hover {
+    background-color: darken(#b5ff2b, 10);
+  }
+}
+
+.notice, .alert {
+  cursor: pointer;
+  position: fixed;
+  top: 95px;
+  right: 60px;
+  padding: 13px 35px;
+  border-radius: 25px;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+  display: none;
+  z-index: 1059;
+}
+.notice {
+  background-color: white;
+}
+.alert {
+  background-color: pink;
+}
+
+.gray-border-right {
+  border-right: 2px solid #aaa;
+}

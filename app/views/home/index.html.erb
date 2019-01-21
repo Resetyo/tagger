@@ -1,0 +1,75 @@
+<div class="container py-3 pb-2">
+  <div class="row">
+    <div class="col-md-3 gray-border-right">
+      <%= form_tag '/filter_source' do %>
+        <div class="d-flex justify-content-between mb-1">
+          <%= select_tag :filter_source, options_for_select(@sources, @filter_source),
+            include_blank: 'Select List',
+            class: 'form-control flex-fill chosen-select' %>
+          <%= button_tag 'Load', class: 'btn btn-secondary ml-2' %>
+        </div>
+        <%= radio_button_tag :filter_type, :new_domains, @filter_type == 'new_domains' %>
+        <%= label_tag :filter_type_new_domains, 'New', class: 'mr-2' %>
+        <%= radio_button_tag :filter_type, :all_domains, @filter_type == 'all_domains' %>
+        <%= label_tag :filter_type_all_domains, 'All' %>
+      <% end %>
+    </div>
+
+    <div class="col-md-9">
+      <%= form_tag '/tagging' do %>
+        <div class="row">
+          <div class="col">
+            <%= select_tag :segment, options_for_select(@segments),
+              include_blank: 'Segment',
+              class: 'form-control' %>
+
+          </div>
+
+          <div class="col">
+            <%= select_tag :content_type, options_for_select(@content_types),
+              include_blank: 'Content Type',
+              class: 'form-control' %>
+          </div>
+
+          <div class="col" style="flex-grow: 0; white-space: nowrap;">
+            <%= radio_button_tag :location, :us, true %>
+            <%= label_tag :location_us, 'US', class: 'mb-0' %>
+            <br>
+            <%= radio_button_tag :location, :intl %>
+            <%= label_tag :location_intl, 'INTL', class: 'mb-0' %>
+          </div>
+
+          <div class="col">
+            <div class="d-flex mb-2">
+              <%= hidden_field_tag :next_domain, @next_domain %>
+              <%= hidden_field_tag :next_domain_source, @next_domain_source %>
+              <%= hidden_field_tag :source, @source %>
+              <%= text_field_tag :domain, @domain, class: 'form-control' %>
+              <%= submit_tag "Skip(#{@sites_left})", name: 'skip', 
+                  class: 'btn btn-secondary ml-2' %>
+            </div>
+
+            <div class="d-flex justify-content-between" 
+                 style="margin-left: -0.25rem; margin-right: -0.25rem">
+              <%= submit_tag 'Junk', name: 'rank', class: 'btn btn-sm btn-danger flex-fill mx-1' %>
+              <%= submit_tag 'R4',   name: 'rank', class: 'btn btn-sm btn-warning flex-fill mx-1' %>
+              <%= submit_tag 'R3',   name: 'rank', class: 'btn btn-sm btn-lemon flex-fill mx-1' %>
+              <%= submit_tag 'R2',   name: 'rank', class: 'btn btn-sm btn-lime flex-fill mx-1' %>
+              <%= submit_tag 'R1',   name: 'rank', class: 'btn btn-sm btn-success flex-fill mx-1' %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+<% case @output %>
+<% when 'doc' %>
+  <iframe srcdoc="<%= @doc %>" style="width:100%; height: calc(100% - 109px);" frameborder="0"></iframe>
+<% when 'picture' %>
+  <div>
+    <img src="site_screenshot.png" alt="site screenshot">
+  </div>
+<% else %>
+  <%= @output_error.html_safe %>
+<% end %>
