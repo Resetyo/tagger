@@ -80,17 +80,17 @@ class HomeController < ApplicationController
       @output = 'doc'
       @doc = Nokogiri::HTML(response).to_html
     rescue Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
-      begin
-        logger.info 'make screenshot'
-        @output = 'picture'
-        screenshot = Gastly.screenshot(to_url(@domain), timeout: 5000)
-        screenshot.phantomjs_options = '--ignore-ssl-errors=true'
-        image = screenshot.capture
-        image.save(Rails.root.join('public','site_screenshot.png'))
-      rescue
+      # begin
+      #   logger.info 'make screenshot'
+      #   @output = 'picture'
+      #   screenshot = Gastly.screenshot(to_url(@domain), timeout: 5000)
+      #   screenshot.phantomjs_options = '--ignore-ssl-errors=true'
+      #   image = screenshot.capture
+      #   image.save(Rails.root.join('public','site_screenshot.png'))
+      # rescue
         @output = 'error'
         @output_error = "<div style='text-align: center;'>Can't load the website <a href='#{to_url(@domain)}' target='_blank'>#{@domain}</a></div>"
-      end
+      # end
     end
   end
 
