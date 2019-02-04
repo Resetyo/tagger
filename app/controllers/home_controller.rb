@@ -49,6 +49,7 @@ class HomeController < ApplicationController
     end
 
     @domain = current&.domain
+    @source = cur_row[:Source]
     @filter_type = current&.filter_type || :new_domains
     @filter_source = current&.filter_source
 
@@ -133,7 +134,7 @@ class HomeController < ApplicationController
             "Location = '#{params[:location]}', "\
             "Notes = '#{params[:notes].gsub(/\r\n/,'\\r\\n')}'"
 
-      @bigquery.query "UPDATE #{@table.query_id} SET #{row} WHERE Company_Domain = '#{current.domain}'"
+      @bigquery.query "UPDATE #{@table} SET #{row} WHERE Company_Domain = '#{current.domain}'"
     end
 
     current.update_attributes(
