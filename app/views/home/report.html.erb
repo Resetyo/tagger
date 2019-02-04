@@ -1,0 +1,23 @@
+<div class="container pt-4">
+  <%= link_to 'Back', root_path, class: 'd-inline-block mb-4' %>
+  <h1 class="mb-4">Report</h1>
+  
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">List</th>
+        <th scope="col"># of Targets</th>
+        <th scope="col"># of New Targets</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @lists.each do |name, counts| %>
+        <tr>
+          <td><%= name %></td>
+          <td><%= counts[:targets_count] %></td>
+          <td><%= counts[:new_targets_count] %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

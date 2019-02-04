@@ -14,4 +14,9 @@ $(document).on('turbolinks:load', function(){
   };
   notify('.notice');
   notify('.alert');
+
+  $('#btn-notes').click(function() {
+    $('#notes').val($('#notes_field').val());
+    $('#notesModal').modal('hide');
+  });
 });

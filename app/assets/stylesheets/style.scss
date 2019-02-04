@@ -41,3 +41,7 @@ html, body {
 .gray-border-right {
   border-right: 2px solid #aaa;
 }
+
+.btn.active {
+  box-shadow: 0px 0px 0px 3px yellow;
+}

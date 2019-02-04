@@ -19,23 +19,27 @@
       <%= form_tag '/tagging' do %>
         <div class="row">
           <div class="col">
-            <%= select_tag :segment, options_for_select(@segments),
+            <%= select_tag :segment, options_for_select(@segments, @segment),
               include_blank: 'Segment',
               class: 'form-control' %>
 
+            <div class="mt-2">
+              <%= link_to 'Report', report_path, class: 'mr-3' %>
+              <%= link_to 'Add Domains', add_domains_path %>
+            </div>
           </div>
 
           <div class="col">
-            <%= select_tag :content_type, options_for_select(@content_types),
+            <%= select_tag :content_type, options_for_select(@content_types, @content_type),
               include_blank: 'Content Type',
               class: 'form-control' %>
           </div>
 
           <div class="col" style="flex-grow: 0; white-space: nowrap;">
-            <%= radio_button_tag :location, :us, true %>
+            <%= radio_button_tag :location, :us, @location == 'us' %>
             <%= label_tag :location_us, 'US', class: 'mb-0' %>
             <br>
-            <%= radio_button_tag :location, :intl %>
+            <%= radio_button_tag :location, :intl, @location == 'intl' %>
             <%= label_tag :location_intl, 'INTL', class: 'mb-0' %>
           </div>
 
@@ -44,18 +48,32 @@
               <%= hidden_field_tag :next_domain, @next_domain %>
               <%= hidden_field_tag :next_domain_source, @next_domain_source %>
               <%= hidden_field_tag :source, @source %>
-              <%= text_field_tag :domain, @domain, class: 'form-control' %>
+              <%= hidden_field_tag :notes, @notes %>
+              <button class="btn btn-secondary mr-2"
+                      type="button" 
+                      data-toggle="modal"
+                      data-target="#notesModal">Notes</button>
+              <%= text_field_tag :domain, @domain, class: 'form-control', readonly: true %>
               <%= submit_tag "Skip(#{@sites_left})", name: 'skip', 
                   class: 'btn btn-secondary ml-2' %>
             </div>
 
             <div class="d-flex justify-content-between" 
                  style="margin-left: -0.25rem; margin-right: -0.25rem">
-              <%= submit_tag 'Junk', name: 'rank', class: 'btn btn-sm btn-danger flex-fill mx-1' %>
-              <%= submit_tag 'R4',   name: 'rank', class: 'btn btn-sm btn-warning flex-fill mx-1' %>
-              <%= submit_tag 'R3',   name: 'rank', class: 'btn btn-sm btn-lemon flex-fill mx-1' %>
-              <%= submit_tag 'R2',   name: 'rank', class: 'btn btn-sm btn-lime flex-fill mx-1' %>
-              <%= submit_tag 'R1',   name: 'rank', class: 'btn btn-sm btn-success flex-fill mx-1' %>
+              <%= submit_tag 'Junk', name: 'rank',
+                class: "btn btn-sm btn-danger flex-fill mx-1 #{'active' if @rank == 'Junk'}" %>
+              <%= submit_tag 'rD', name: 'rank',
+                class: "btn btn-sm btn-warning flex-fill mx-1 #{'active' if @rank == 'rD'}" %>
+              <%= submit_tag 'rC', name: 'rank',
+                class: "btn btn-sm btn-lemon flex-fill mx-1 #{'active' if @rank == 'rC'}>" %>
+              <%= submit_tag 'rB', name: 'rank',
+                class: "btn btn-sm btn-lime flex-fill mx-1 #{'active' if @rank == 'rB'}" %>
+              <%= submit_tag 'rA', name: 'rank',
+                class: "btn btn-sm btn-success flex-fill mx-1 #{'active' if @rank == 'rA'}" %>
+              <%= submit_tag 'rAA', name: 'rank',
+                class: "btn btn-sm btn-success flex-fill mx-1 #{'active' if @rank == 'rAA'}" %>
+              <%= submit_tag 'rAAA', name: 'rank',
+                class: "btn btn-sm btn-success flex-fill mx-1 #{'active' if @rank == 'rAAA'}" %>
             </div>
           </div>
         </div>
@@ -73,3 +91,25 @@
 <% else %>
   <%= @output_error.html_safe %>
 <% end %>
+
+<div class="modal fade" id="notesModal" tabindex="-1" role="dialog" aria-labelledby="notesModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Notes</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <%= text_area_tag :notes_field, @notes, class: 'form-control', rows: 10 %>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-notes">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

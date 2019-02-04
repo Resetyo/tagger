@@ -1,3 +1,5 @@
+http_username:
+http_password:
 manual_dataset:
 manual_table:
 BIGQUERY_PROJECT:

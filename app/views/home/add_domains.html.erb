@@ -1,0 +1,38 @@
+<div class="container pt-4">
+  <%= link_to 'Back', root_path, class: 'd-inline-block mb-4' %>
+
+  <% if @added.any? %>
+    <p>
+      <%= pluralize @added.count, 'domain' %> was added
+    </p>
+  <% end %>
+
+  <% if @duplicates.any? %>
+    <p>
+      <%= pluralize @duplicates.count, 'domain' %>
+      <%=@duplicates.count == 1 ? 'is' : 'are' %>
+      duplicate<%=@duplicates.count == 1 ? '' : 's' %>
+      (<%= @duplicates.join(' ') %>)
+    </p>
+  <% end %>
+
+  <h1 class="mb-4">Add Domains</h1>
+  
+  <%= form_tag '/add_domains_form' do %>
+    <div class="row">
+      <div class="col">
+        <%= select_tag :source, options_for_select(@sources),
+          include_blank: 'Select List',
+          class: 'form-control chosen-select mb-4' %>
+
+        <%= label_tag :domains, 'Separate domains by newline' %>
+        <%= text_area_tag :domains, nil, class: 'form-control mb-4', rows: 5 %>
+
+        <%= submit_tag 'Add Domains', class: 'btn btn-primary' %>
+      </div>
+
+      <div class="col">
+      </div>
+    </div>
+  <% end %>
+</div>
