@@ -1,4 +1,4 @@
-<div class="container pt-4">
+<div class="container py-4">
   <%= link_to 'Back', root_path, class: 'd-inline-block mb-4' %>
 
   <% if @added.any? %>
@@ -23,10 +23,11 @@
       <div class="col">
         <%= select_tag :source, options_for_select(@sources),
           include_blank: 'Select List',
-          class: 'form-control chosen-select mb-4' %>
+          class: 'form-control chosen-select mb-4',
+          required: true %>
 
         <%= label_tag :domains, 'Separate domains by newline' %>
-        <%= text_area_tag :domains, nil, class: 'form-control mb-4', rows: 5 %>
+        <%= text_area_tag :domains, nil, class: 'form-control mb-4', rows: 5, required: true %>
 
         <%= submit_tag 'Add Domains', class: 'btn btn-primary' %>
       </div>

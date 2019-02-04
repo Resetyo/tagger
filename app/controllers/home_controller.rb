@@ -1,6 +1,8 @@
 class HomeController < ApplicationController
   include HomeHelper
-  http_basic_authenticate_with name: ENV['http_username'], password: ENV['http_password'], only: :index
+  http_basic_authenticate_with name: ENV['http_username'],
+                               password: ENV['http_password'],
+                               only: :index
 
   def index
     @segments = ['Sports', 'Gaming ', 'Outdoor', 'Fitness', 'Comedy', 'Special Interest', 'Faith', 'News & Politics', 'Personality', 'Lifestyle', 'Kids & Family', 'Music', 'TV & Film', 'Education', 'Subscription Commerce', 'Corporate', 'Events', 'Agency', 'Other']
@@ -8,74 +10,67 @@ class HomeController < ApplicationController
 
     unless set_bq_vars
       @sources = []
-      flash[:alert] = "Can't find any table in dataset" unless @table
-      flash[:alert] = "Can't find dataset" unless @dataset
+      flash[:alert] = "Can't find any table in dataset" if ENV['manual_table'].blank?
+      flash[:alert] = "Can't find dataset" if ENV['manual_dataset'].blank?
       return
     end
 
-    @sources = []
     @output_error = ''
 
-    current = CurrentState.first_or_create(
-                domain: @table.data[0][@domain_header],
-                domain_source: @table.data[0][@source_header]
-              )
-
-    domains = []
-    domains_data = []
-
-    @table.data.all.each do |row|
-      @sources << row[@source_header]
-
-      next if current.filter_type == 'new_domains' && row[:Reviewed_Date].present?
-      next if current.filter_source.present? && current.filter_source != row[@source_header]
-
-      domains << [
-        row[@domain_header],
-        row[@source_header]
-      ]
-
-      domains_data << [
-        row[:Segment],
-        row[:Content_Type],
-        row[:Rank],
-        row[:Location],
-        row[:Notes]
-      ]
-    end
-
-    @sources.uniq!
+    sql = "SELECT DISTINCT Source FROM #{@table}"
+    @sources = @bigquery.query(sql).map { |s|  s[:Source] }
     session[:sources] = @sources
 
-    if current.domain.blank? || current.domain_source.blank?
-      current.update_attributes(
-        domain: domains[0][0], 
-        domain_source: domains[0][1]
-      )
+    current = CurrentState.first_or_create
+
+    filter_type_query = current.filter_type == 'new_domains' ? "Reviewed_Date IS NULL" : "1=1"
+    filter_source_query = current.filter_source.present? ? "Source = '#{current.filter_source}'" : "1=1"
+
+    sql = "SELECT COUNT(*) FROM #{@table} WHERE #{filter_type_query} AND #{filter_source_query}"
+    total_count = @bigquery.query(sql).first.values.first
+
+    if current.domain.present?
+      sql = "WITH Cte AS (SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table}) SELECT * FROM Cte WHERE Company_Domain = '#{current.domain}' AND #{filter_type_query} AND #{filter_source_query}"
+      cur_row = @bigquery.query(sql).first
+
+      if cur_row
+        cur_row_number = cur_row[:number]
+      else
+        sql = "SELECT * FROM #{@table} LIMIT 1"
+        cur_row = @bigquery.query(sql).first
+        cur_row_number = 1
+        current.update_attributes(domain: cur_row[:Company_Domain])
+      end
+    else
+      sql = "SELECT * FROM #{@table} WHERE #{filter_type_query} AND #{filter_source_query} LIMIT 1"
+      cur_row = @bigquery.query(sql).first
+      cur_row_number = 1
+      current.update_attributes(domain: cur_row[:Company_Domain])
     end
 
     @domain = current&.domain
-    @source = current&.domain_source
     @filter_type = current&.filter_type || :new_domains
     @filter_source = current&.filter_source
-    @sites_left = domains.count - domains.index([@domain, @source]) - 1
-    @segment = domains_data[domains.index([@domain, @source])][0]
-    @content_type = domains_data[domains.index([@domain, @source])][1]
-    @rank = domains_data[domains.index([@domain, @source])][2]
-    @location = domains_data[domains.index([@domain, @source])][3]
-    @notes = domains_data[domains.index([@domain, @source])][4]
 
-    if domains.count > domains.index([@domain, @source]) + 1
-      @next_domain = domains[domains.index([@domain, @source]) + 1][0]
-      @next_domain_source = domains[domains.index([@domain, @source]) + 1][1]
+    @sites_left = total_count - cur_row_number
+    @segment = cur_row[:Segment]
+    @content_type = cur_row[:Content_Type]
+    @rank = cur_row[:Rank]
+    @location = cur_row[:Location]
+    @notes = cur_row[:Notes]
+
+    if total_count > cur_row_number
+      sql = "WITH Cte AS (select Company_Domain, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table}) SELECT * FROM Cte WHERE number = #{cur_row_number + 1}"
+      @next_domain = @bigquery.query(sql).first[:Company_Domain]
     else
       @next_domain = ''
       @next_domain_source = ''
       flash[:alert] = 'No more sites'
     end
 
-    return if @table.data[0][@domain_header].blank?
+    return if cur_row[:Company_Domain].blank?
 
+    #open uri
     begin
       logger.info 'open uri'
       response = open(to_url(@domain), {
@@ -97,16 +92,14 @@ class HomeController < ApplicationController
         @output_error = "<div style='text-align: center;'>Can't load the website <a href='#{to_url(@domain)}' target='_blank'>#{@domain}</a></div>"
       end
     end
-
   end
 
   def filter_source
     current = CurrentState.first
 
     current.domain = nil
-    current.domain_source = nil
-    current.filter_source = params[:filter_source]
-    current.filter_type = params[:filter_type]
+    current.filter_source = params[:filter_source].present? ? params[:filter_source] : nil
+    current.filter_type = params[:filter_type].present? ? params[:filter_type] : 0
     current.save
 
     redirect_to root_path
@@ -118,8 +111,8 @@ class HomeController < ApplicationController
     unless params[:skip]
       set_bq_vars
       # row = {
-      #   @source_header => params[:source],
-      #   @domain_header => params[:domain],
+      #   :Source => params[:source],
+      #   :Company_Domain => params[:domain],
       #   :Segment => params[:segment],
       #   :Content_Type => params[:content_type],
       #   :Rank => params[:rank],
@@ -128,11 +121,11 @@ class HomeController < ApplicationController
       #   :Notes => params[:notes]
       # }
 
-      # @bigquery.query "DELETE FROM #{@table.query_id} WHERE #{@source_header} = '#{current.domain_source}' AND #{@domain_header} = '#{current.domain}'"
+      # @bigquery.query "DELETE FROM #{@table.query_id} WHERE Source = '#{current.domain_source}' AND Company_Domain = '#{current.domain}'"
       # @table.insert row
 
-      row = "#{@source_header.to_s} = '#{params[:source]}', "\
-            "#{@domain_header.to_s} = '#{params[:domain]}', "\
+      row = "Source = '#{params[:source]}', "\
+            "Company_Domain = '#{params[:domain]}', "\
             "Segment = '#{params[:segment]}', "\
             "Content_Type = '#{params[:content_type]}', "\
             "Rank = '#{params[:rank]}', "\
@@ -140,12 +133,11 @@ class HomeController < ApplicationController
             "Location = '#{params[:location]}', "\
             "Notes = '#{params[:notes].gsub(/\r\n/,'\\r\\n')}'"
 
-      @bigquery.query "UPDATE #{@table.query_id} SET #{row} WHERE #{@source_header} = '#{current.domain_source}' AND #{@domain_header} = '#{current.domain}'"
+      @bigquery.query "UPDATE #{@table.query_id} SET #{row} WHERE Company_Domain = '#{current.domain}'"
     end
 
     current.update_attributes(
-        domain: params[:next_domain], 
-        domain_source: params[:next_domain_source]
+        domain: params[:next_domain]
       )
 
     redirect_to root_path
@@ -154,18 +146,22 @@ class HomeController < ApplicationController
   def report
     set_bq_vars
 
+    sql = "SELECT Source, COUNT(*) FROM #{@table} GROUP BY Source"
+    counts = @bigquery.query(sql)
+
+    sql = "SELECT Source, COUNT(*) FROM #{@table} WHERE Reviewed_Date IS NULL GROUP BY Source"
+    new_counts = @bigquery.query(sql)
+
     @lists = {}
 
-    @table.data.all.each do |row|
-      if @lists[row[@source_header]].blank?
-        @lists[row[@source_header]] = { targets_count: 0, new_targets_count: 0 }
-      end
+    counts.each do |row|
+      @lists[row[:Source]] ||= {}
+      @lists[row[:Source]][:targets_count] = row[:f0_]
+    end
 
-      @lists[row[@source_header]][:targets_count] += 1
-
-      if row[:Reviewed_Date].blank?
-        @lists[row[@source_header]][:new_targets_count] += 1
-      end
+    new_counts.each do |row|
+      @lists[row[:Source]] ||= {}
+      @lists[row[:Source]][:new_targets_count] = row[:f0_]
     end
   end
 
@@ -184,19 +180,24 @@ class HomeController < ApplicationController
     added = []
     duplicates = []
 
-    @table.data.all.each do |row|
-      duplicate[row[@domain_header]] = true if domains.include?(row[@domain_header])
-    end
+    sql = "SELECT Company_Domain FROM #{@table} WHERE Company_Domain IN (#{domains.map{|d|"'#{d}'"}.join(', ')})"
+    matched_domains = @bigquery.query(sql).map { |d| d[:Company_Domain] }
+
+    # @table.data.all.each do |row|
+    #   duplicate[row[:Company_Domain]] = true if domains.include?(row[:Company_Domain])
+    # end
 
     domains.each do |domain|
-      duplicates << domain && next if duplicate[domain]
+      duplicates << domain && next if matched_domains.include?(domain)
 
       row = {
-        @source_header => params[:source],
-        @domain_header => domain
+        :Source => params[:source],
+        :Company_Domain => domain
       }
 
-      @table.insert row
+      dataset = @bigquery.dataset ENV['manual_dataset']
+      table = dataset.table ENV['manual_table']
+      table.insert row
       added << domain
     end
 
@@ -207,22 +208,6 @@ class HomeController < ApplicationController
 
     def set_bq_vars
       @bigquery = Google::Cloud::Bigquery.new
-
-      if ENV['manual_dataset'] && ENV['manual_dataset'].length > 0
-        @dataset = @bigquery.dataset ENV['manual_dataset']
-      end
-
-      @dataset ||= @bigquery.datasets.first
-
-      return unless @dataset
-
-      return unless ENV['manual_table'] && ENV['manual_table'].length > 0
-
-      @table = @dataset.table ENV['manual_table']
-
-      return unless @table
-
-      @source_header = :Source
-      @domain_header = :Company_Domain
+      @table = "#{ENV['manual_dataset']}.#{ENV['manual_table']}"
     end
 end
