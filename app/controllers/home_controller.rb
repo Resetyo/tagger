@@ -30,7 +30,7 @@ class HomeController < ApplicationController
     total_count = @bigquery.query(sql).first.values.first
 
     if current.domain.present?
-      sql = "WITH Cte AS (SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table}) SELECT * FROM Cte WHERE Company_Domain = '#{current.domain}' AND #{filter_type_query} AND #{filter_source_query}"
+      sql = "WITH Cte AS (SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table} WHERE #{filter_type_query} AND #{filter_source_query}) SELECT * FROM Cte WHERE Company_Domain = '#{current.domain}'"
       cur_row = @bigquery.query(sql).first
 
       if cur_row
@@ -61,7 +61,7 @@ class HomeController < ApplicationController
     @notes = cur_row[:Notes]
 
     if total_count > cur_row_number
-      sql = "WITH Cte AS (select Company_Domain, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table}) SELECT * FROM Cte WHERE number = #{cur_row_number + 1}"
+      sql = "WITH Cte AS (select Company_Domain, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS number FROM #{@table} WHERE #{filter_type_query} AND #{filter_source_query}) SELECT * FROM Cte WHERE number = #{cur_row_number + 1}"
       @next_domain = @bigquery.query(sql).first[:Company_Domain]
     else
       @next_domain = ''
