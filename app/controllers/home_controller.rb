@@ -79,7 +79,7 @@ class HomeController < ApplicationController
                     open_timeout: 5,
                     ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
       @output = 'doc'
-      @doc = Nokogiri::HTML(response).to_html
+      @doc = Nokogiri::HTML(response).to_html.gsub(/\.location\.replace\(.+\)/,'')
     rescue Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
       # begin
       #   logger.info 'make screenshot'
