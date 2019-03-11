@@ -48,7 +48,7 @@ class HomeController < ApplicationController
       current.update_attributes(domain: cur_row[:Company_Domain])
     end
 
-    @domain = current&.domain
+    @domain = 'fountainsoflockhart.com'
     @source = cur_row[:Source]
     @filter_type = current&.filter_type || :new_domains
     @filter_source = current&.filter_source
@@ -79,7 +79,9 @@ class HomeController < ApplicationController
                     open_timeout: 5,
                     ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
       @output = 'doc'
-      @doc = Nokogiri::HTML(response).to_html.gsub(/\.location\.replace\(.+\)/,'')
+      @doc = Nokogiri::HTML.parse(response)
+      @doc.encoding = 'utf-8'
+      @doc.to_html.gsub(/\.location\.replace\(.+\)/,'')
     rescue Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
       # begin
       #   logger.info 'make screenshot'
