@@ -48,7 +48,7 @@ class HomeController < ApplicationController
       current.update_attributes(domain: cur_row[:Company_Domain])
     end
 
-    @domain = 'fountainsoflockhart.com'
+    @domain = current&.domain
     @source = cur_row[:Source]
     @filter_type = current&.filter_type || :new_domains
     @filter_source = current&.filter_source
@@ -80,9 +80,9 @@ class HomeController < ApplicationController
                     ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE})
       @output = 'doc'
       @doc = Nokogiri::HTML.parse(response)
-      @doc.encoding = 'utf-8'
+      # @doc.encoding = 'utf-8'
       @doc.to_html.gsub(/\.location\.replace\(.+\)/,'')
-    rescue Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
+    rescue => error #Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
       # begin
       #   logger.info 'make screenshot'
       #   @output = 'picture'
@@ -92,7 +92,7 @@ class HomeController < ApplicationController
       #   image.save(Rails.root.join('public','site_screenshot.png'))
       # rescue
         @output = 'error'
-        @output_error = "<div style='text-align: center;'>Can't load the website <a href='#{to_url(@domain)}' target='_blank'>#{@domain}</a></div>"
+        @output_error = "<div style='text-align: center;'>Can't load the website <a href='#{to_url(@domain)}' target='_blank'>#{@domain}</a><br>#{error.message}</div>"
       # end
     end
   end
