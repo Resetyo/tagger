@@ -82,7 +82,7 @@
 </div>
 <% case @output %>
 <% when 'doc' %>
-  <iframe srcdoc="<%= @doc %>" style="width:100%; height: calc(100% - 109px);" frameborder="0"></iframe>
+  <iframe sandbox="allow-same-origin allow-scripts allow-popups allow-forms" srcdoc="<%= @doc %>" style="width:100%; height: calc(100% - 109px);" frameborder="0"></iframe>
 <% when 'picture' %>
   <div>
     <img src="site_screenshot.png" alt="site screenshot">

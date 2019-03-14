@@ -81,7 +81,7 @@ class HomeController < ApplicationController
       @output = 'doc'
       @doc = Nokogiri::HTML.parse(response)
       # @doc.encoding = 'utf-8'
-      @doc.to_html.gsub(/\.location\.replace\(.+\)/,'')
+      @doc.to_html.gsub(/\.location\.replace\(.+\)/,'').gsub('replaceState','')
     rescue => error #Errno::ECONNREFUSED, Net::OpenTimeout, OpenSSL::SSL::SSLError, SocketError, OpenURI::HTTPError
       # begin
       #   logger.info 'make screenshot'
